@@ -14,4 +14,7 @@ pub fn create() !void {
 
     const physical_device = try vk.pickPhysicalDevice(allocator, instance);
     vk.getDeviceName(physical_device);
+
+    const logical_device = try vk.createLogicalDevice(physical_device);
+    defer vk.destroyLogicalDevice(logical_device);
 }

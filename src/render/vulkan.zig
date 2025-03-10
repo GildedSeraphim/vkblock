@@ -11,7 +11,7 @@ const validation_layers: []const [*c]const u8 = if (!debug) &[0][*c]const u8{} e
 };
 
 const device_extensions: []const [*c]const u8 = &[_][*c]const u8{
-    c.VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    //c.VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 };
 
 pub fn callVersion() !void {
@@ -115,11 +115,24 @@ pub const Device = struct {
 //    Creation, destruction, and management of graphics state. See Pipelines and Resource Descriptors, among others, for further details.
 
 pub fn createLogicalDevice(pd: PhysicalDevice) !Device {
+    const priority: f32 = 1.0;
+    const device_queue: c.VkDeviceQueueCreateInfo = .{
+        .sType = c.VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        .pNext = null,
+        .queueFamilyIndex = 0,
+        .queueCount = 1,
+        .pQueuePriorities = &priority,
+    };
+
+    const device_features: c.VkPhysicalDeviceFeatures2 = .{
+        .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+    };
+
     const create_info: c.VkDeviceCreateInfo = .{
         .sType = c.VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        .pNext = null,
-        .queueCreateInfoCount = 0,
-        .pQueueCreateInfos = null,
+        .pNext = &device_features,
+        .queueCreateInfoCount = 1,
+        .pQueueCreateInfos = &device_queue,
         .enabledExtensionCount = @as(u32, @intCast(device_extensions.len)),
         .ppEnabledExtensionNames = device_extensions.ptr,
     };
@@ -141,7 +154,7 @@ pub fn destroyLogicalDevice(self: Device) void {
 // Helper Functions and Notes Below
 //
 // TODO: Add criteria for choosing physical_device
-// TODO: Queues
+//
 //
 //
 //
