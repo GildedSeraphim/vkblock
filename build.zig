@@ -10,7 +10,6 @@ pub fn build(b: *std.Build) void {
     });
 
     // ### Libraries ###
-    exe.linkSystemLibrary("glfw");
     exe.linkSystemLibrary("vulkan");
     exe.linkSystemLibrary("dl");
     exe.linkSystemLibrary("pthread");
@@ -18,6 +17,9 @@ pub fn build(b: *std.Build) void {
     exe.linkSystemLibrary("Xxf86vm");
     exe.linkSystemLibrary("Xrandr");
     exe.linkSystemLibrary("Xi");
+    exe.linkSystemLibrary("glfw");
+    exe.linkSystemLibrary("imgui");
+    exe.linkSystemLibrary("cglm");
     // #################
 
     exe.linkLibCpp();
