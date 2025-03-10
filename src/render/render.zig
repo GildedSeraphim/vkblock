@@ -1,6 +1,7 @@
 const std = @import("std");
 const vk = @import("vulkan.zig");
 const c = @import("../clibs.zig");
+const window = @import("window.zig");
 const Allocator = std.mem.Allocator;
 
 pub fn create() !void {
