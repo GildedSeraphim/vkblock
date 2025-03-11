@@ -58,9 +58,9 @@
 
               #################
               ### Libraries ###
-              glfw
-              stb
               imgui
+              glfw3
+              glm
               cglm
               #################
 
@@ -70,7 +70,6 @@
               gcc
               clang
               #################
-              zig
             ];
 
             packages = with pkgs; [
@@ -91,7 +90,7 @@
 
               #############
               ### Langs ###
-              zig
+              zig_0_13
               #############
 
               #############
