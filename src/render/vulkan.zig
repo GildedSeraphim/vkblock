@@ -12,7 +12,7 @@ const validation_layers: []const [*c]const u8 = if (!debug) &[0][*c]const u8{} e
 };
 
 const device_extensions: []const [*c]const u8 = &[_][*c]const u8{
-    c.VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    //c.VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 };
 
 pub fn callVersion() !void {
@@ -34,7 +34,7 @@ pub const Instance = struct {
 };
 
 pub fn createInstance() !Instance {
-    const extensions = window.getExtensions();
+    //  const extensions = window.getExtensions();
     const app_info: c.VkApplicationInfo = .{
         .sType = c.VK_STRUCTURE_TYPE_APPLICATION_INFO,
         .pNext = null,
@@ -48,8 +48,8 @@ pub fn createInstance() !Instance {
     const create_info: c.VkInstanceCreateInfo = .{
         .sType = c.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         .pApplicationInfo = &app_info,
-        .enabledExtensionCount = @intCast(extensions.len),
-        .ppEnabledExtensionNames = extensions.ptr,
+        .enabledExtensionCount = 0,
+        .ppEnabledExtensionNames = null,
         .enabledLayerCount = @intCast(validation_layers.len),
         .ppEnabledLayerNames = validation_layers.ptr,
     };
