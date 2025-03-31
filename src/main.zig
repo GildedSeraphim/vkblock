@@ -1,6 +1,6 @@
 const std = @import("std");
 const c = @import("clibs.zig");
-
+//a line
 pub fn main() !void {
     if (c.glfwInit() == 0) {
         return error.GLFWInitializationFailed;
