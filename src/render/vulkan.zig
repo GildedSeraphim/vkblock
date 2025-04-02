@@ -1,6 +1,13 @@
 const std = @import("std");
 const c = @import("../clibs.zig");
 
+const builtin = @import("builtin");
+const debug = (builtin.mode == .Debug);
+
+const validation_layers: []const [*c]const u8 = if (!debug) &[0][*c]const u8{} else &[_][*c]const u8{
+    "VK_LAYER_KHRONOS_validation",
+};
+
 pub const Vulk = struct {
     instance: c.VkInstance,
 
@@ -34,7 +41,8 @@ pub const Vulk = struct {
             .pApplicationInfo = &app_info,
             .enabledExtensionCount = glfw_extension_count,
             .ppEnabledExtensionNames = glfw_extensions,
-            .enabledLayerCount = 0,
+            .enabledLayerCount = @intCast(validation_layers.len),
+            .ppEnabledLayerNames = validation_layers.ptr,
         };
 
         var instance: c.VkInstance = undefined;
