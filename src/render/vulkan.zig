@@ -1,5 +1,6 @@
 const std = @import("std");
 const c = @import("../clibs.zig");
+const Allocator = std.mem.Allocator;
 
 const builtin = @import("builtin");
 const debug = (builtin.mode == .Debug);
@@ -10,10 +11,15 @@ const validation_layers: []const [*c]const u8 = if (!debug) &[0][*c]const u8{} e
 
 pub const Vulk = struct {
     instance: c.VkInstance,
+    phys_device: c.VkPhysicalDevice,
 
-    pub fn initVulkan() !Vulk {
+    pub fn initVulkan(allocator: Allocator) !Vulk {
+        const instance = try createInstance();
+        const phys_device = try pickPhysicalDevice(instance, allocator);
+
         return Vulk{
-            .instance = try createInstance(),
+            .instance = instance,
+            .phys_device = phys_device,
         };
     }
 
@@ -50,6 +56,16 @@ pub const Vulk = struct {
         try mapError(c.vkCreateInstance(&create_info, null, &instance));
 
         return instance;
+    }
+
+    fn pickPhysicalDevice(i: c.VkInstance, allocator: Allocator) !c.VkPhysicalDevice {
+        var device_count: u32 = 0;
+        try mapError(c.vkEnumeratePhysicalDevices(i, &device_count, null));
+        const devices = try allocator.alloc(c.VkPhysicalDevice, device_count);
+        defer allocator.free(devices);
+        try mapError(c.vkEnumeratePhysicalDevices(i, &device_count, @ptrCast(devices)));
+
+        return devices[0];
     }
 
     pub fn mapError(result: c_int) !void {
