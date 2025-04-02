@@ -65,7 +65,29 @@ pub const Vulk = struct {
         defer allocator.free(devices);
         try mapError(c.vkEnumeratePhysicalDevices(i, &device_count, @ptrCast(devices)));
 
-        return devices[0];
+        const phys_device: c.VkPhysicalDevice = devices[0];
+
+        // for (devices) |device| {
+        //     if (try isDeviceSuitable(device)) {
+        //         phys_device = device;
+        //         break;
+        //     }
+        //
+        //     if (phys_device == c.VK_NULL_HANDLE) {
+        //         return error.NO_SUITABLE_PHYSICAL_DEVICE_FOUND;
+        //     }
+        // }
+
+        return phys_device;
+    }
+
+    fn isDeviceSuitable(device: c.VkPhysicalDevice) !bool {
+        var device_properties: c.VkPhysicalDeviceProperties = undefined;
+        var device_features: c.VkPhysicalDeviceFeatures = undefined;
+        try mapError(c.vkGetPhysicalDeviceProperties(device, &device_properties));
+        try mapError(c.vkGetPhysicalDeviceFeatures(device, &device_features));
+
+        return device_properties.deviceType == c.VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU and device_features.geometryShader;
     }
 
     pub fn mapError(result: c_int) !void {
