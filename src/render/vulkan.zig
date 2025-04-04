@@ -12,14 +12,17 @@ const validation_layers: []const [*c]const u8 = if (!debug) &[0][*c]const u8{} e
 pub const Vulk = struct {
     instance: c.VkInstance,
     phys_device: c.VkPhysicalDevice,
+    indices: QueueFamilyIndices,
 
     pub fn initVulkan(allocator: Allocator) !Vulk {
         const instance = try createInstance();
         const phys_device = try pickPhysicalDevice(instance, allocator);
+        const indices = try findQueueFamilies(phys_device, allocator);
 
         return Vulk{
             .instance = instance,
             .phys_device = phys_device,
+            .indices = indices,
         };
     }
 
@@ -90,6 +93,28 @@ pub const Vulk = struct {
         return device_properties.deviceType == c.VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU and device_features.geometryShader;
     }
 
+    fn findQueueFamilies(device: c.VkPhysicalDevice, allocator: Allocator) !QueueFamilyIndices {
+        var indices: QueueFamilyIndices = undefined;
+
+        var queue_family_count: u32 = 0;
+        c.vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, null);
+
+        const queue_families = try allocator.alloc(c.VkQueueFamilyProperties, queue_family_count);
+        defer allocator.free(queue_families);
+
+        c.vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, @ptrCast(queue_families));
+
+        var i: u32 = 0;
+        for (queue_families) |queue_family| {
+            if (queue_family.queueFlags == 1 and c.VK_QUEUE_GRAPHICS_BIT == 1) {
+                indices.graphics_family = i;
+            }
+            i = i + 1;
+        }
+
+        return indices;
+    }
+
     pub fn mapError(result: c_int) !void {
         return switch (result) {
             c.VK_SUCCESS => {},
@@ -141,4 +166,8 @@ pub const Vulk = struct {
             else => error.vk_errror_unknown,
         };
     }
+};
+
+pub const QueueFamilyIndices = struct {
+    graphics_family: u32,
 };
