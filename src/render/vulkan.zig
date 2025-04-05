@@ -1,5 +1,6 @@
 const std = @import("std");
 const c = @import("../clibs.zig");
+const win = @import("window.zig");
 const Allocator = std.mem.Allocator;
 
 const builtin = @import("builtin");
@@ -11,16 +12,19 @@ const validation_layers: []const [*c]const u8 = if (!debug) &[0][*c]const u8{} e
 
 pub const Vulk = struct {
     instance: c.VkInstance,
+    surface: c.VkSurfaceKHR,
     phys_device: c.VkPhysicalDevice,
     device: c.VkDevice,
 
-    pub fn initVulkan(allocator: Allocator) !Vulk {
+    pub fn initVulkan(allocator: Allocator, window: win.Window) !Vulk {
         const instance = try createInstance();
+        const surface = try createSurface(instance, window);
         const phys_device = try pickPhysicalDevice(instance, allocator);
         const device = try createLogicalDevice(phys_device, allocator);
 
         return Vulk{
             .instance = instance,
+            .surface = surface,
             .phys_device = phys_device,
             .device = device,
         };
@@ -28,6 +32,7 @@ pub const Vulk = struct {
 
     pub fn cleanup(self: Vulk) void {
         c.vkDestroyDevice(self.device, null);
+        c.vkDestroySurfaceKHR(self.instance, self.surface, null);
         c.vkDestroyInstance(self.instance, null);
     }
 
@@ -60,6 +65,14 @@ pub const Vulk = struct {
         try mapError(c.vkCreateInstance(&create_info, null, &instance));
 
         return instance;
+    }
+
+    fn createSurface(instance: c.VkInstance, window: win.Window) !c.VkSurfaceKHR {
+        var surface: c.VkSurfaceKHR = undefined;
+
+        try mapError(c.glfwCreateWindowSurface(instance, window.window, null, &surface));
+
+        return surface;
     }
 
     fn pickPhysicalDevice(i: c.VkInstance, allocator: Allocator) !c.VkPhysicalDevice {
