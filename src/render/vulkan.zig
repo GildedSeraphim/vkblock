@@ -12,21 +12,22 @@ const validation_layers: []const [*c]const u8 = if (!debug) &[0][*c]const u8{} e
 pub const Vulk = struct {
     instance: c.VkInstance,
     phys_device: c.VkPhysicalDevice,
-    indices: QueueFamilyIndices,
+    device: c.VkDevice,
 
     pub fn initVulkan(allocator: Allocator) !Vulk {
         const instance = try createInstance();
         const phys_device = try pickPhysicalDevice(instance, allocator);
-        const indices = try findQueueFamilies(phys_device, allocator);
+        const device = try createLogicalDevice(phys_device, allocator);
 
         return Vulk{
             .instance = instance,
             .phys_device = phys_device,
-            .indices = indices,
+            .device = device,
         };
     }
 
     pub fn cleanup(self: Vulk) void {
+        c.vkDestroyDevice(self.device, null);
         c.vkDestroyInstance(self.instance, null);
     }
 
@@ -103,16 +104,51 @@ pub const Vulk = struct {
         defer allocator.free(queue_families);
 
         c.vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, @ptrCast(queue_families));
+        std.debug.print("Queue families length :: {d}\n", .{queue_families.len});
 
         var i: u32 = 0;
         for (queue_families) |queue_family| {
-            if (queue_family.queueFlags == 1 and c.VK_QUEUE_GRAPHICS_BIT == 1) {
+            if ((queue_family.queueFlags & c.VK_QUEUE_GRAPHICS_BIT) != 0) {
                 indices.graphics_family = i;
             }
             i = i + 1;
         }
 
+        std.debug.print("valid queue families :: {d}", .{i});
+
         return indices;
+    }
+
+    fn createLogicalDevice(phys_device: c.VkPhysicalDevice, allocator: Allocator) !c.VkDevice {
+        const indices: QueueFamilyIndices = try findQueueFamilies(phys_device, allocator);
+
+        const queue_priority: f32 = 1.0;
+
+        const queue_create_info = c.VkDeviceQueueCreateInfo{
+            .sType = c.VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            .queueFamilyIndex = indices.graphics_family,
+            .queueCount = 1,
+            .pQueuePriorities = &queue_priority,
+        };
+
+        const device_features = c.VkPhysicalDeviceFeatures{};
+
+        const create_info = c.VkDeviceCreateInfo{
+            .sType = c.VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+            .pQueueCreateInfos = &queue_create_info,
+            .queueCreateInfoCount = 1,
+            .pEnabledFeatures = &device_features,
+            .enabledExtensionCount = 0,
+        };
+
+        var device: c.VkDevice = undefined;
+
+        try mapError(c.vkCreateDevice(phys_device, &create_info, null, &device));
+
+        var graphics_queue: c.VkQueue = undefined;
+        _ = c.vkGetDeviceQueue(device, indices.graphics_family, 0, &graphics_queue);
+
+        return device;
     }
 
     pub fn mapError(result: c_int) !void {
