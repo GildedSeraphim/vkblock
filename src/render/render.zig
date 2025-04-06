@@ -4,19 +4,12 @@ const win = @import("window.zig");
 const vulkan = @import("vulkan.zig");
 const Allocator = std.mem.Allocator;
 
-pub const App = struct {
-    pub fn mainLoop(allocator: Allocator) !void {
-        // GLFW Initialization
-        const w: win.Window = try win.Window.initWindow();
-        defer c.glfwDestroyWindow(w.window);
-        defer c.glfwTerminate();
+const Render = @This();
 
-        // Vulkan Initialization
-        const vk = try vulkan.Vulk.initVulkan(allocator, w);
-        defer vk.cleanup();
+instance: c.VkInstance,
 
-        while (c.glfwWindowShouldClose(w.window) == 0) {
-            _ = c.glfwPollEvents();
-        }
-    }
-};
+pub fn create() !Render {
+    const instance = vk.Instance.create();
+}
+
+pub fn destroy() !Render {}
