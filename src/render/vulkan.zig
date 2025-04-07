@@ -65,3 +65,5 @@ pub fn mapError(result: c_int) !void {
         else => error.vk_errror_unknown,
     };
 }
+
+pub const Instance = struct {};

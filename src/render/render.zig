@@ -9,7 +9,7 @@ const Render = @This();
 instance: c.VkInstance,
 
 pub fn create() !Render {
-    const instance = vk.Instance.create();
+    const instance = vk.instance.create();
 }
 
 pub fn destroy() !Render {}
