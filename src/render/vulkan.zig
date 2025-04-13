@@ -103,3 +103,28 @@ pub const Instance = struct {
         c.vkDestroyInstance(self.handle, null);
     }
 };
+
+pub const PhysDevice = struct {
+    handle: c.VkPhysicalDevice,
+
+    pub fn enumerate(i: Instance, alloc: Allocator) !PhysDevice {
+        var device_count: u32 = undefined;
+        try mapError(c.vkEnumeratePhysicalDevices(i.handle, &device_count, null));
+
+        const device_list = try alloc.alloc(c.VkPhysicalDevice, device_count);
+        defer alloc.free(device_list);
+        try mapError(c.vkEnumeratePhysicalDevices(i.handle, &device_count, @ptrCast(device_list)));
+
+        // TODO
+        // add real device criteria selection
+        //
+
+        return PhysDevice{
+            .handle = device_list[0],
+        };
+    }
+
+    pub fn isSuitable() bool {
+        return true;
+    }
+};
