@@ -1,6 +1,6 @@
 const std = @import("std");
 const c = @import("../clibs.zig");
-const win = @import("window.zig");
+const win = @import("./window.zig");
 const Allocator = std.mem.Allocator;
 
 const builtin = @import("builtin");
@@ -66,4 +66,40 @@ pub fn mapError(result: c_int) !void {
     };
 }
 
-pub const Instance = struct {};
+pub const Instance = struct {
+    handle: c.VkInstance,
+
+    pub fn create() !Instance {
+        const extensions = win.getExtensions();
+
+        const app_info: c.VkApplicationInfo = .{
+            .sType = c.VK_STRUCTURE_TYPE_APPLICATION_INFO,
+            .apiVersion = c.VK_API_VERSION_1_4,
+            .engineVersion = c.VK_MAKE_VERSION(1, 0, 0),
+            .pEngineName = "Idk man its an engine",
+            .applicationVersion = c.VK_MAKE_VERSION(1, 0, 0),
+            .pApplicationName = "Vulkan app",
+        };
+
+        const create_info: c.VkInstanceCreateInfo = .{
+            .sType = c.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+            .pApplicationInfo = &app_info,
+            .enabledLayerCount = @intCast(validation_layers.len),
+            .ppEnabledLayerNames = validation_layers.ptr,
+            .enabledExtensionCount = @intCast(extensions.len),
+            .ppEnabledExtensionNames = extensions.ptr,
+        };
+
+        var instance: c.VkInstance = undefined;
+
+        try mapError(c.vkCreateInstance(&create_info, null, &instance));
+
+        return Instance{
+            .handle = instance,
+        };
+    }
+
+    pub fn destroy(self: Instance) void {
+        c.vkDestroyInstance(self.handle, null);
+    }
+};

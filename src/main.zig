@@ -7,6 +7,9 @@ pub fn main() !void {
 
     std.debug.print("Hello Vulkan Triangle! \n", .{});
 
+    const r = try render.create();
+    defer render.destroy(r);
+
     if (gpa.detectLeaks()) {
         return error.leaked_memory;
     }
