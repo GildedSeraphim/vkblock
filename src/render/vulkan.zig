@@ -115,16 +115,30 @@ pub const PhysDevice = struct {
         defer alloc.free(device_list);
         try mapError(c.vkEnumeratePhysicalDevices(i.handle, &device_count, @ptrCast(device_list)));
 
-        // TODO
-        // add real device criteria selection
-        //
-
-        return PhysDevice{
-            .handle = device_list[0],
-        };
+        var j: u32 = 0;
+        while (j <= device_count) {
+            if (isSuitable(device_list[j])) {
+                return PhysDevice{ .handle = device_list[j] };
+            }
+            j = j + 1;
+        }
+        return error.NO_VALID_GPU;
     }
 
-    pub fn isSuitable() bool {
-        return true;
+    pub fn isSuitable(device: c.VkPhysicalDevice) bool {
+        var device_properties: c.VkPhysicalDeviceProperties = undefined;
+        var device_features: c.VkPhysicalDeviceFeatures = undefined;
+        _ = c.vkGetPhysicalDeviceProperties(device, &device_properties);
+        _ = c.vkGetPhysicalDeviceFeatures(device, &device_features);
+
+        var is_suitable: bool = undefined;
+        if (device_properties.deviceType == c.VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU and device_features.geometryShader == 1) {
+            is_suitable = true;
+            std.debug.print("Chosen GPU :: {s}\n", .{device_properties.deviceName});
+        } else {
+            is_suitable = false;
+        }
+
+        return is_suitable;
     }
 };
