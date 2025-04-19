@@ -8,6 +8,7 @@ const Render = @This();
 
 instance: vk.Instance,
 phys_device: vk.PhysDevice,
+device: vk.Device,
 
 pub fn create(arena: Allocator) !Render {
     _ = c.glfwInit();
@@ -16,13 +17,16 @@ pub fn create(arena: Allocator) !Render {
     const instance = try vk.Instance.create();
 
     const phys_device = try vk.PhysDevice.enumerate(instance, arena);
+    const device = try vk.Device.create(phys_device);
 
     return Render{
         .instance = instance,
         .phys_device = phys_device,
+        .device = device,
     };
 }
 
 pub fn destroy(self: Render) void {
+    self.device.destroy();
     self.instance.destroy();
 }

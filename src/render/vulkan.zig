@@ -10,7 +10,7 @@ const validation_layers: []const [*c]const u8 = if (!debug) &[0][*c]const u8{} e
     "VK_LAYER_KHRONOS_validation",
 };
 
-const device_extensions: []const [*c]const u8 = [_][*c]const u8{
+const device_extensions: []const [*c]const u8 = &[_][*c]const u8{
     c.VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 };
 
@@ -140,5 +140,31 @@ pub const PhysDevice = struct {
         }
 
         return is_suitable;
+    }
+};
+
+pub const Device = struct {
+    handle: c.VkDevice,
+
+    pub fn create(phys_dev: PhysDevice) !Device {
+        const create_info = c.VkDeviceCreateInfo{
+            .sType = c.VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+            .queueCreateInfoCount = 0,
+            .pQueueCreateInfos = null,
+            .enabledExtensionCount = @intCast(device_extensions.len),
+            .ppEnabledExtensionNames = device_extensions.ptr,
+        };
+
+        var device: c.VkDevice = undefined;
+
+        try mapError(c.vkCreateDevice(phys_dev.handle, &create_info, null, &device));
+
+        return Device{
+            .handle = device,
+        };
+    }
+
+    pub fn destroy(self: Device) void {
+        c.vkDestroyDevice(self.handle, null);
     }
 };
