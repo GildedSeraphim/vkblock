@@ -146,11 +146,31 @@ pub const PhysDevice = struct {
 pub const Device = struct {
     handle: c.VkDevice,
 
-    pub fn create(phys_dev: PhysDevice) !Device {
+    pub fn create(phys_dev: PhysDevice, alloc: Allocator) !Device {
+        const graphics_queue_index = try graphicsQueue(phys_dev, alloc);
+
+        const priorities: f32 = 1.0;
+
+        const graphics_queue_create_info = c.VkDeviceQueueCreateInfo{
+            .sType = c.VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            .queueCount = 1,
+            .pQueuePriorities = &priorities,
+            .queueFamilyIndex = graphics_queue_index,
+        };
+
+        const queues: []const c.VkDeviceQueueCreateInfo = &.{graphics_queue_create_info};
+
+        var device_features: c.VkPhysicalDeviceFeatures2 = .{
+            .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+        };
+
+        _ = c.vkGetPhysicalDeviceFeatures2(phys_dev.handle, &device_features);
+
         const create_info = c.VkDeviceCreateInfo{
             .sType = c.VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            .queueCreateInfoCount = 0,
-            .pQueueCreateInfos = null,
+            .pNext = &device_features,
+            .queueCreateInfoCount = @intCast(queues.len),
+            .pQueueCreateInfos = queues.ptr,
             .enabledExtensionCount = @intCast(device_extensions.len),
             .ppEnabledExtensionNames = device_extensions.ptr,
         };
@@ -167,4 +187,58 @@ pub const Device = struct {
     pub fn destroy(self: Device) void {
         c.vkDestroyDevice(self.handle, null);
     }
+
+    fn getQueueFamilyProperties(phys_dev: PhysDevice, alloc: Allocator) ![]const c.VkQueueFamilyProperties {
+        var count: u32 = undefined;
+        _ = c.vkGetPhysicalDeviceQueueFamilyProperties(phys_dev.handle, &count, null);
+
+        const queue_list = try alloc.alloc(c.VkQueueFamilyProperties, count);
+
+        _ = c.vkGetPhysicalDeviceQueueFamilyProperties(phys_dev.handle, &count, @ptrCast(queue_list));
+
+        std.debug.print("Queue count:: {d}\n", .{count});
+        return queue_list;
+    }
+
+    fn graphicsQueue(phys_dev: PhysDevice, alloc: Allocator) !u32 {
+        const queue_families = try getQueueFamilyProperties(phys_dev, alloc);
+        defer alloc.free(queue_families);
+
+        var graphics_queue: ?u32 = null;
+
+        for (queue_families, 0..) |family, index| {
+            if (graphics_queue) |_| {
+                break;
+            }
+
+            if ((family.queueFlags & c.VK_QUEUE_GRAPHICS_BIT) != 0x0) {
+                graphics_queue = @intCast(index);
+            }
+        }
+
+        std.debug.print("Graphics Queue Index:: {d}\n", .{graphics_queue.?});
+
+        return graphics_queue.?;
+    }
+
+    // fn presentQueue(phys_dev: PhysDevice, alloc: Allocator) !u32 {
+    //     const queue_families = try getQueueFamilyProperties(phys_dev, alloc);
+    //     defer alloc.free(queue_families);
+    //
+    //     var present_queue: ?u32 = null;
+    //
+    //     for (queue_families, 0..) |family, index| {
+    //         if (present_queue) |_| {
+    //             break;
+    //         }
+    //         var support: u32 = undefined;
+    //         try mapError(c.vkGetPhysicalDeviceSurfaceSupportKHR(phys_dev.handle, @intCast(index), surface.handle, &support));
+    //
+    //         if (support == c.VK_TRUE) {
+    //             present_queue = @intCast(index);
+    //         }
+    //     }
+    //
+    //     return present_queue;
+    // }
 };

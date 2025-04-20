@@ -17,7 +17,7 @@ pub fn create(arena: Allocator) !Render {
     const instance = try vk.Instance.create();
 
     const phys_device = try vk.PhysDevice.enumerate(instance, arena);
-    const device = try vk.Device.create(phys_device);
+    const device = try vk.Device.create(phys_device, arena);
 
     return Render{
         .instance = instance,
