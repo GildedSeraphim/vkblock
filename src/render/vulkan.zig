@@ -2,6 +2,7 @@ const std = @import("std");
 const c = @import("../clibs.zig");
 const win = @import("./window.zig");
 const Allocator = std.mem.Allocator;
+const window = @import("window.zig");
 
 const builtin = @import("builtin");
 const debug = (builtin.mode == .Debug);
@@ -143,10 +144,26 @@ pub const PhysDevice = struct {
     }
 };
 
+pub const Surface = struct {
+    handle: c.VkSurfaceKHR,
+    pub fn create(i: Instance, w: window.Window) !Surface {
+        var surface: c.VkSurfaceKHR = undefined;
+        try mapError(c.glfwCreateWindowSurface(i.handle, w.raw, null, &surface));
+        return Surface{
+            .handle = surface,
+        };
+    }
+
+    pub fn destroy(self: Surface, instance: Instance) void {
+        c.vkDestroySurfaceKHR(instance.handle, self.handle, null);
+    }
+};
+
 pub const Device = struct {
     handle: c.VkDevice,
 
-    pub fn create(phys_dev: PhysDevice, alloc: Allocator) !Device {
+    pub fn create(phys_dev: PhysDevice, alloc: Allocator, surface: Surface) !Device {
+        const present_queue_index = try presentQueue(phys_dev, alloc, surface);
         const graphics_queue_index = try graphicsQueue(phys_dev, alloc);
 
         const priorities: f32 = 1.0;
@@ -158,7 +175,14 @@ pub const Device = struct {
             .queueFamilyIndex = graphics_queue_index,
         };
 
-        const queues: []const c.VkDeviceQueueCreateInfo = &.{graphics_queue_create_info};
+        const present_queue_create_info = c.VkDeviceQueueCreateInfo{
+            .sType = c.VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            .queueCount = 1,
+            .pQueuePriorities = &priorities,
+            .queueFamilyIndex = present_queue_index,
+        };
+
+        const queues: []const c.VkDeviceQueueCreateInfo = &.{ graphics_queue_create_info, present_queue_create_info };
 
         var device_features: c.VkPhysicalDeviceFeatures2 = .{
             .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
@@ -206,7 +230,7 @@ pub const Device = struct {
 
         var graphics_queue: ?u32 = null;
 
-        for (queue_families, 0..) |family, index| {
+        for (queue_families, 1..) |family, index| {
             if (graphics_queue) |_| {
                 break;
             }
@@ -221,24 +245,27 @@ pub const Device = struct {
         return graphics_queue.?;
     }
 
-    // fn presentQueue(phys_dev: PhysDevice, alloc: Allocator) !u32 {
-    //     const queue_families = try getQueueFamilyProperties(phys_dev, alloc);
-    //     defer alloc.free(queue_families);
-    //
-    //     var present_queue: ?u32 = null;
-    //
-    //     for (queue_families, 0..) |family, index| {
-    //         if (present_queue) |_| {
-    //             break;
-    //         }
-    //         var support: u32 = undefined;
-    //         try mapError(c.vkGetPhysicalDeviceSurfaceSupportKHR(phys_dev.handle, @intCast(index), surface.handle, &support));
-    //
-    //         if (support == c.VK_TRUE) {
-    //             present_queue = @intCast(index);
-    //         }
-    //     }
-    //
-    //     return present_queue;
-    // }
+    fn presentQueue(phys_dev: PhysDevice, alloc: Allocator, surface: Surface) !u32 {
+        const queue_families = try getQueueFamilyProperties(phys_dev, alloc);
+        defer alloc.free(queue_families);
+
+        var present_queue: ?u32 = null;
+
+        for (queue_families, 0..) |_, index| {
+            if (present_queue) |_| {
+                break;
+            }
+
+            var support: u32 = undefined;
+            try mapError(c.vkGetPhysicalDeviceSurfaceSupportKHR(phys_dev.handle, @intCast(index), surface.handle, &support));
+
+            if (support == c.VK_TRUE) {
+                present_queue = @intCast(index);
+            }
+        }
+
+        std.debug.print("Present Queue Index:: {d}\n", .{present_queue.?});
+
+        return present_queue.?;
+    }
 };
