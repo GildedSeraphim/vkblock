@@ -13,6 +13,7 @@ const validation_layers: []const [*c]const u8 = if (!debug) &[0][*c]const u8{} e
 
 const device_extensions: []const [*c]const u8 = &[_][*c]const u8{
     c.VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    c.VK_KHR_swapchain,
 };
 
 pub fn mapError(result: c_int) !void {
@@ -267,5 +268,31 @@ pub const Device = struct {
         std.debug.print("Present Queue Index:: {d}\n", .{present_queue.?});
 
         return present_queue.?;
+    }
+};
+
+pub const Swapchain = struct {
+    handle: c.VkSwapchainKHR,
+
+    pub fn create(dev: Device, surf: Surface) !Swapchain {
+        const extent = c.VkExtent2D{ .width = 800, .height = 600 };
+        const createInfo = c.VkSwapchainCreateInfoKHR{
+            .sType = c.VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+            .surface = surf.handle,
+            .minImageCount = 4,
+            .imageFormat = c.VK_FORMAT_R8G8B8A8_SRGB,
+            .imageColorSpace = c.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, //use vkGetPhysicalDeviceSurfaceFormatsKHR later.
+            .imageExtent = extent,
+            .imageArrayLayers = 1,
+            .imageUsage = c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+            .presentMode = c.VK_PRESENT_MODE_IMMEDIATE_KHR,
+        };
+
+        var swap: c.VkSwapchainKHR = undefined;
+        try mapError(c.vkCreateSwapchainKHR(dev.handle, &createInfo, null, &swap));
+
+        return Swapchain{
+            .handle = swap,
+        };
     }
 };

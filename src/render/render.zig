@@ -11,6 +11,7 @@ window: win.Window,
 surface: vk.Surface,
 phys_device: vk.PhysDevice,
 device: vk.Device,
+swapchain: vk.Swapchain,
 
 pub fn create(arena: Allocator) !Render {
     _ = c.glfwInit();
@@ -24,12 +25,15 @@ pub fn create(arena: Allocator) !Render {
     const phys_device = try vk.PhysDevice.enumerate(instance, arena);
     const device = try vk.Device.create(phys_device, arena, surface);
 
+    const swapch = try vk.Swapchain.create(device, surface);
+
     return Render{
         .instance = instance,
         .window = window,
         .surface = surface,
         .phys_device = phys_device,
         .device = device,
+        .swapchain = swapch,
     };
 }
 
