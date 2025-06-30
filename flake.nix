@@ -60,6 +60,7 @@
               ### Libraries ###
               imgui
               glfw3
+              sdl2-compat
               glm
               cglm
               #################

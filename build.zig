@@ -20,6 +20,7 @@ pub fn build(b: *std.Build) void {
     exe.linkSystemLibrary("glfw");
     exe.linkSystemLibrary("imgui");
     exe.linkSystemLibrary("cglm");
+    exe.linkSystemLibrary("SDL2");
     // #################
 
     exe.linkLibCpp();
