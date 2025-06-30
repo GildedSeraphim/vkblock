@@ -95,7 +95,6 @@ pub const Instance = struct {
         var instance: c.VkInstance = undefined;
 
         try mapError(c.vkCreateInstance(&create_info, null, &instance));
-
         return Instance{
             .handle = instance,
         };
@@ -273,8 +272,9 @@ pub const Device = struct {
 
 pub const Swapchain = struct {
     handle: c.VkSwapchainKHR,
+    images: []c.VkImage,
 
-    pub fn create(dev: Device, surf: Surface) !Swapchain {
+    pub fn create(dev: Device, surf: Surface, alloc: Allocator) !Swapchain {
         const extent = c.VkExtent2D{ .width = 800, .height = 600 };
         const createInfo = c.VkSwapchainCreateInfoKHR{
             .sType = c.VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
@@ -286,13 +286,23 @@ pub const Swapchain = struct {
             .imageArrayLayers = 1,
             .imageUsage = c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
             .presentMode = c.VK_PRESENT_MODE_IMMEDIATE_KHR,
+            // make changes once queues are set up
+            .imageSharingMode = c.VK_SHARING_MODE_CONCURRENT,
+            .queueFamilyIndexCount = 2,
         };
 
         var swap: c.VkSwapchainKHR = undefined;
         try mapError(c.vkCreateSwapchainKHR(dev.handle, &createInfo, null, &swap));
 
+        var img_count: u32 = undefined;
+        try mapError(c.vkGetSwapchainImagesKHR(dev.handle, swap, &img_count, null));
+
+        const swap_chain_image_handle = try alloc.alloc(c.VkImage, img_count);
+        try mapError(c.vkGetSwapchainImagesKHR(dev.handle, swap, &img_count, @ptrCast(swap_chain_image_handle)));
+
         return Swapchain{
             .handle = swap,
+            .images = swap_chain_image_handle,
         };
     }
 };

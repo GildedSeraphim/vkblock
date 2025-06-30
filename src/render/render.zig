@@ -25,7 +25,7 @@ pub fn create(arena: Allocator) !Render {
     const phys_device = try vk.PhysDevice.enumerate(instance, arena);
     const device = try vk.Device.create(phys_device, arena, surface);
 
-    const swapch = try vk.Swapchain.create(device, surface);
+    const swapch = try vk.Swapchain.create(device, surface, arena);
 
     return Render{
         .instance = instance,
